@@ -2,11 +2,12 @@
 <html lang="da">
 <head>
   <meta charset="UTF-8" />
-  <title>Joke Sætning Maskine</title>
+  <title>Joke Sætningsmaskine</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      --sidebar-width: 280px;
+      --sidebar-width: 320px;
+      --sidebar-collapsed-width: 10px;
     }
     * { box-sizing: border-box; }
     body {
@@ -16,86 +17,114 @@
       height: 100vh;
       background: #fff;
     }
+    /* SIDEBAR (genbrugt stil) */
     .sidebar {
       width: var(--sidebar-width);
       border-right: 1px solid #ddd;
-      padding: .8rem .9rem;
-      background: #f5f5f5;
+      padding: 1rem;
+      background: #f8f8f8;
       display: flex;
       flex-direction: column;
-      gap: .7rem;
-    }
-    .sidebar h1 {
-      font-size: .95rem;
-      margin: 0 0 .1rem 0;
-    }
-    .sidebar small {
-      font-size: .67rem;
-      color: #6b7280;
-    }
-    .joke-overview {
-      flex: 1;
+      gap: 1rem;
       overflow-y: auto;
-      margin-top: .5rem;
-      display: flex;
-      flex-direction: column;
-      gap: .4rem;
+      position: relative;
+      transition: width .0s ease-out, padding .0s ease-out;
     }
-    .joke-item {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      padding: .35rem .4rem .35rem .4rem;
+    .sidebar h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+    .section-title {
       font-size: .7rem;
-      display: flex;
-      flex-direction: column;
-      gap: .25rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #4b5563;
+      margin-bottom: .35rem;
+    }
+    .joke-list-side {
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 6px;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .side-joke-item {
+      padding: .35rem .45rem .35rem .45rem;
+      border-bottom: 1px solid #eee;
       cursor: pointer;
       position: relative;
     }
-    .joke-item-title {
+    .side-joke-item:last-child {
+      border-bottom: none;
+    }
+    .side-joke-title {
+      font-size: .7rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .joke-item-sub {
+    .side-joke-line {
       font-size: .65rem;
       color: #6b7280;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .joke-item-delete {
+    .side-joke-delete {
       position: absolute;
       right: .4rem;
-      top: .35rem;
+      top: .3rem;
       border: none;
-      background: transparent;
+      background: none;
       color: #b91c1c;
       font-size: .8rem;
       cursor: pointer;
     }
-    .side-actions {
-      margin-top: .3rem;
-      display: flex;
-      gap: .4rem;
-    }
-    .side-actions button {
-      flex: 1;
-      padding: .35rem .5rem;
-      font-size: .7rem;
+    .suggestions {
+      background: #f1f2f3;
+      border: 1px solid #e0e0e0;
       border-radius: 6px;
-      border: 1px solid #d1d5db;
+      padding: .5rem .6rem;
+      font-size: .72rem;
+      color: #4b5563;
+      line-height: 1.35;
+    }
+    .suggestions-title {
+      font-weight: 600;
+      margin-bottom: .25rem;
+      font-size: .75rem;
+    }
+    .delete-all-btn {
       background: #fff;
+      border: 1px solid #f0b4b4;
+      color: #b91c1c;
+      font-size: .7rem;
+      padding: .25rem .4rem;
+      border-radius: 4px;
+      margin-top: .25rem;
       cursor: pointer;
     }
-    #exportArea {
+    .export-area {
       width: 100%;
       min-height: 100px;
-      margin-top: .4rem;
       font-size: .7rem;
       display: none;
     }
+    button {
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: .35rem .7rem;
+      font-size: .7rem;
+    }
+    .primary {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+
+    /* MAIN FLOW */
     .main {
       flex: 1;
       padding: 1rem 1.2rem 1.5rem;
@@ -117,6 +146,8 @@
       display: flex;
       flex-direction: column;
       gap: .4rem;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, .05);
+      background: rgba(248, 248, 248, .9);
     }
     .step-header {
       display: flex;
@@ -155,24 +186,6 @@
       gap: .4rem;
       margin-top: .2rem;
     }
-    .primary {
-      background: #2563eb;
-      color: #fff;
-      border: 1px solid #2563eb;
-      border-radius: 6px;
-      padding: .45rem .8rem;
-      font-size: .78rem;
-      cursor: pointer;
-    }
-    .ghost {
-      background: #fff;
-      color: #111;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      padding: .45rem .8rem;
-      font-size: .78rem;
-      cursor: pointer;
-    }
     .preview-block {
       border: 1px dashed #d1d5db;
       border-radius: 8px;
@@ -186,14 +199,9 @@
       margin: 0 0 .4rem 0;
       color: #374151;
     }
-    .preview-block p {
-      margin: 0;
-    }
-    .empty-side {
-      font-size: .7rem;
-      color: #9ca3af;
-    }
-    /* Modal */
+    .preview-block p { margin: 0; }
+
+    /* MODAL */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -230,7 +238,7 @@
     }
     .modal-close {
       border: none;
-      background: #90a7c5;
+      background: #8e8e8e;
       color: white;
       padding: .35rem .6rem;
       border-radius: 6px;
@@ -241,29 +249,46 @@
   </style>
 </head>
 <body>
-  <div class="sidebar">
-    <h1>Overblik</h1>
-    <small>Dine gemte jokesætninger</small>
-    <div id="jokeOverview" class="joke-overview"></div>
-    <div class="side-actions">
-      <button id="exportBtn" type="button">Eksporter</button>
-      <button id="deleteAllBtn" type="button">Slet alt</button>
+  <div class="sidebar" id="sidebar">
+    <h2>Joke sætninger</h2>
+    <div>
+      <div class="section-title">Overblik</div>
+      <div id="jokeOverview" class="joke-list-side"></div>
     </div>
-    <textarea id="exportArea"></textarea>
+
+    <div>
+      <div class="section-title">Eksporter</div>
+      <button id="exportBtn" type="button">Eksporter alle</button>
+      <textarea id="exportArea" class="export-area"></textarea>
+    </div>
+
+    <div>
+      <div class="section-title">Gode råd til joke-flow</div>
+      <div class="suggestions">
+        <div class="suggestions-title">Tips</div>
+        <ul style="padding-left:1rem; margin:0;">
+          <li>Start med et meget konkret hovedemne.</li>
+          <li>Lad negativ-sætningen være så hverdagslig som muligt.</li>
+          <li>Den sidste sætning skal lyde som noget du kan sige højt uden at forklare konteksten.</li>
+        </ul>
+      </div>
+      <span style="font-size:.65rem; display:block; color:#6b7280; margin-top:.2rem;">Data gemmes lokalt i din browser.</span>
+      <button class="delete-all-btn" id="deleteAllBtn">Slet al hukommelse</button>
+    </div>
   </div>
 
   <div class="main">
     <div class="flow-container">
-      <h2 style="font-size:1rem;margin:0 0 .2rem 0;">Jokesætnings-maskine</h2>
+      <h1 style="font-size:1rem;margin:0 0 .2rem 0;">Sætningsmaskine</h1>
       <p style="font-size:.7rem;color:#6b7280;margin:0 0 .6rem 0;">
-        Udfyld fra top til bund. Næste trin får automatisk lidt kontekst fra det forrige.
+        Formålet med denne maskine er at hjælpe dig med at bygge joke-sætninger baseret på en simpel struktur, som giver dig en sætning ud fra et hovedemne, som kan blive et oplæg til at putte i en jokemaskine.
       </p>
 
       <!-- Step 1 -->
       <div class="step-card">
         <div class="step-header">
           <div class="step-number">1</div>
-          <div class="step-title">Vælg hovedemne</div>
+          <div class="step-title">Hovedemne</div>
         </div>
         <input type="text" id="mainTopic" placeholder="fx Rengøring" />
       </div>
@@ -272,9 +297,9 @@
       <div class="step-card">
         <div class="step-header">
           <div class="step-number">2</div>
-          <div class="step-title">Udvælg underemne i overemne</div>
+          <div class="step-title">Underemne i overemne</div>
         </div>
-        <input type="text" id="subTopic" placeholder="fx Støvsugning" />
+        <input type="text" id="subTopic" placeholder="fx Duften" />
         <small id="subHint" style="font-size:.65rem;color:#6b7280;"></small>
       </div>
 
@@ -282,9 +307,9 @@
       <div class="step-card">
         <div class="step-header">
           <div class="step-number">3</div>
-          <div class="step-title">Find en negativ holdning</div>
+          <div class="step-title">Negativ holdning</div>
         </div>
-        <textarea id="negative" placeholder="fx Jeg hader at støvsuge"></textarea>
+        <textarea id="negative" placeholder="fx De fleste rengøringsmidler lugter kemisk og det er kan jeg ikke lide"></textarea>
         <small id="negHint" style="font-size:.65rem;color:#6b7280;"></small>
       </div>
 
@@ -292,9 +317,9 @@
       <div class="step-card">
         <div class="step-header">
           <div class="step-number">4</div>
-          <div class="step-title">Vend det til noget positivt</div>
+          <div class="step-title">Positiv holdning (vend på hovedet)</div>
         </div>
-        <textarea id="positiveFlip" placeholder="fx Jeg er helt vild med at støvsuge"></textarea>
+        <textarea id="positiveFlip" placeholder="fx Jeg er vild med den kemiske duft fra rengøringsmidler"></textarea>
         <small id="posHint" style="font-size:.65rem;color:#6b7280;"></small>
       </div>
 
@@ -302,17 +327,17 @@
       <div class="step-card">
         <div class="step-header">
           <div class="step-number">5</div>
-          <div class="step-title">Sætning der udtrykker min positive holdning</div>
+          <div class="step-title">Sætning til scenen</div>
         </div>
-        <textarea id="finalSentence" placeholder="fx Jeg støvsuger hver dag derhjemme"></textarea>
+        <textarea id="finalSentence" placeholder="fx Det bedste ved at gøre rent er duften af renhed bagefter"></textarea>
         <small id="finalHint" style="font-size:.65rem;color:#6b7280;"></small>
       </div>
 
       <div class="step-card">
         <div class="preview-block" id="previewBlock" style="display:none;"></div>
         <div class="submit-row">
-          <button id="saveBtn" class="primary" type="button">Gem jokesætning</button>
-          <button id="clearBtn" class="ghost" type="button">Ryd</button>
+          <button id="saveBtn" class="primary" type="button">Gem joke-flow</button>
+          <button id="clearBtn" type="button">Ryd felter</button>
         </div>
       </div>
     </div>
@@ -321,7 +346,7 @@
   <!-- Modal -->
   <div id="modalBackdrop" class="modal-backdrop">
     <div class="modal" id="modal">
-      <h3>Jokesætnings-maskine</h3>
+      <h3>Sætningsmaskine</h3>
       <div id="modalContent"></div>
       <button id="modalClose" class="modal-close" type="button">Luk</button>
     </div>
@@ -357,6 +382,7 @@
     renderOverview();
     renderPreview();
 
+    // live hints
     mainTopicEl.addEventListener('input', () => {
       subHintEl.textContent = mainTopicEl.value ? "Underemne indenfor: " + mainTopicEl.value : "";
       renderPreview();
@@ -370,7 +396,7 @@
       renderPreview();
     });
     positiveFlipEl.addEventListener('input', () => {
-      finalHintEl.textContent = positiveFlipEl.value ? "Gør det til en sætning der kan siges på scenen." : "";
+      finalHintEl.textContent = positiveFlipEl.value ? "Nu skal det lyde som en rigtig joke-linje." : "";
       renderPreview();
     });
     finalSentenceEl.addEventListener('input', renderPreview);
@@ -395,7 +421,8 @@
     });
 
     deleteAllBtn.addEventListener('click', () => {
-      if (!confirm("Slet alle gemte jokes?")) return;
+      const ok = confirm("Er du sikker på, at du vil slette alle jokes?\nDette kan ikke fortrydes.");
+      if (!ok) return;
       jokes = [];
       saveToStorage();
       renderOverview();
@@ -436,17 +463,20 @@
       if (!jokes.length) {
         const p = document.createElement('p');
         p.className = "empty-side";
-        p.textContent = "Ingen jokes endnu.";
+        p.textContent = "Ingen sætningsmaskiner endnu.";
+        p.style.fontSize = ".7rem";
+        p.style.color = "#9ca3af";
+        p.style.marginLeft = ".4rem";
         jokeOverviewEl.appendChild(p);
         return;
       }
       jokes.forEach(j => {
         const item = document.createElement('div');
-        item.className = "joke-item";
+        item.className = "side-joke-item";
 
         const delBtn = document.createElement('button');
         delBtn.textContent = "×";
-        delBtn.className = "joke-item-delete";
+        delBtn.className = "side-joke-delete";
         delBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           jokes = jokes.filter(x => x.id !== j.id);
@@ -456,11 +486,11 @@
         item.appendChild(delBtn);
 
         const title = document.createElement('div');
-        title.className = "joke-item-title";
+        title.className = "side-joke-title";
         title.textContent = j.mainTopic + " → " + j.subTopic;
 
         const sub = document.createElement('div');
-        sub.className = "joke-item-sub";
+        sub.className = "side-joke-line";
         sub.textContent = j.finalSentence || "(ingen sætning til scene)";
 
         item.appendChild(title);
