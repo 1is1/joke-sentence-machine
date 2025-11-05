@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <title>Joke Sætning Maskine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --sidebar-width: 280px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex;
+      height: 100vh;
+      background: #fff;
+    }
+    .sidebar {
+      width: var(--sidebar-width);
+      border-right: 1px solid #ddd;
+      padding: .8rem .9rem;
+      background: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      gap: .7rem;
+    }
+    .sidebar h1 {
+      font-size: .95rem;
+      margin: 0 0 .1rem 0;
+    }
+    .sidebar small {
+      font-size: .67rem;
+      color: #6b7280;
+    }
+    .joke-overview {
+      flex: 1;
+      overflow-y: auto;
+      margin-top: .5rem;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+    .joke-item {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: .35rem .4rem .35rem .4rem;
+      font-size: .7rem;
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+      cursor: pointer;
+      position: relative;
+    }
+    .joke-item-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .joke-item-sub {
+      font-size: .65rem;
+      color: #6b7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .joke-item-delete {
+      position: absolute;
+      right: .4rem;
+      top: .35rem;
+      border: none;
+      background: transparent;
+      color: #b91c1c;
+      font-size: .8rem;
+      cursor: pointer;
+    }
+    .side-actions {
+      margin-top: .3rem;
+      display: flex;
+      gap: .4rem;
+    }
+    .side-actions button {
+      flex: 1;
+      padding: .35rem .5rem;
+      font-size: .7rem;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      cursor: pointer;
+    }
+    #exportArea {
+      width: 100%;
+      min-height: 100px;
+      margin-top: .4rem;
+      font-size: .7rem;
+      display: none;
+    }
+    .main {
+      flex: 1;
+      padding: 1rem 1.2rem 1.5rem;
+      overflow-y: auto;
+      background: #fff;
+    }
+    .flow-container {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: .9rem;
+    }
+    .step-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fff;
+      padding: .75rem .8rem .8rem;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+    .step-header {
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+    }
+    .step-number {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: #2563eb;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      font-weight: 600;
+    }
+    .step-title {
+      font-size: .8rem;
+      font-weight: 600;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: .4rem .45rem;
+      font-size: .8rem;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 55px;
+    }
+    .submit-row {
+      display: flex;
+      gap: .4rem;
+      margin-top: .2rem;
+    }
+    .primary {
+      background: #2563eb;
+      color: #fff;
+      border: 1px solid #2563eb;
+      border-radius: 6px;
+      padding: .45rem .8rem;
+      font-size: .78rem;
+      cursor: pointer;
+    }
+    .ghost {
+      background: #fff;
+      color: #111;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: .45rem .8rem;
+      font-size: .78rem;
+      cursor: pointer;
+    }
+    .preview-block {
+      border: 1px dashed #d1d5db;
+      border-radius: 8px;
+      padding: .6rem .7rem .55rem;
+      background: #fafafa;
+      font-size: .73rem;
+      line-height: 1.35;
+    }
+    .preview-block h3 {
+      font-size: .72rem;
+      margin: 0 0 .4rem 0;
+      color: #374151;
+    }
+    .preview-block p {
+      margin: 0;
+    }
+    .empty-side {
+      font-size: .7rem;
+      color: #9ca3af;
+    }
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .modal {
+      background: #fff;
+      border-radius: 10px;
+      max-width: 420px;
+      width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: .9rem 1rem 1rem;
+      box-shadow: 0 15px 35px rgba(0,0,0,.15);
+      font-size: .78rem;
+      line-height: 1.35;
+    }
+    .modal h3 {
+      margin-top: 0;
+      font-size: .9rem;
+    }
+    .modal-row {
+      margin-bottom: .4rem;
+    }
+    .modal-label {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #6b7280;
+    }
+    .modal-close {
+      border: none;
+      background: #90a7c5;
+      color: white;
+      padding: .35rem .6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .7rem;
+      margin-top: .4rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h1>Overblik</h1>
+    <small>Dine gemte jokesætninger</small>
+    <div id="jokeOverview" class="joke-overview"></div>
+    <div class="side-actions">
+      <button id="exportBtn" type="button">Eksporter</button>
+      <button id="deleteAllBtn" type="button">Slet alt</button>
+    </div>
+    <textarea id="exportArea"></textarea>
+  </div>
+
+  <div class="main">
+    <div class="flow-container">
+      <h2 style="font-size:1rem;margin:0 0 .2rem 0;">Jokesætnings-maskine</h2>
+      <p style="font-size:.7rem;color:#6b7280;margin:0 0 .6rem 0;">
+        Udfyld fra top til bund. Næste trin får automatisk lidt kontekst fra det forrige.
+      </p>
+
+      <!-- Step 1 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <div class="step-title">Vælg hovedemne</div>
+        </div>
+        <input type="text" id="mainTopic" placeholder="fx Rengøring" />
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <div class="step-title">Udvælg underemne i overemne</div>
+        </div>
+        <input type="text" id="subTopic" placeholder="fx Støvsugning" />
+        <small id="subHint" style="font-size:.65rem;color:#6b7280;"></small>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <div class="step-title">Find en negativ holdning</div>
+        </div>
+        <textarea id="negative" placeholder="fx Jeg hader at støvsuge"></textarea>
+        <small id="negHint" style="font-size:.65rem;color:#6b7280;"></small>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-number">4</div>
+          <div class="step-title">Vend det til noget positivt</div>
+        </div>
+        <textarea id="positiveFlip" placeholder="fx Jeg er helt vild med at støvsuge"></textarea>
+        <small id="posHint" style="font-size:.65rem;color:#6b7280;"></small>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-number">5</div>
+          <div class="step-title">Sætning der udtrykker min positive holdning</div>
+        </div>
+        <textarea id="finalSentence" placeholder="fx Jeg støvsuger hver dag derhjemme"></textarea>
+        <small id="finalHint" style="font-size:.65rem;color:#6b7280;"></small>
+      </div>
+
+      <div class="step-card">
+        <div class="preview-block" id="previewBlock" style="display:none;"></div>
+        <div class="submit-row">
+          <button id="saveBtn" class="primary" type="button">Gem jokesætning</button>
+          <button id="clearBtn" class="ghost" type="button">Ryd</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal" id="modal">
+      <h3>Jokesætnings-maskine</h3>
+      <div id="modalContent"></div>
+      <button id="modalClose" class="modal-close" type="button">Luk</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "joke-flow-v1";
+
+    const mainTopicEl = document.getElementById('mainTopic');
+    const subTopicEl = document.getElementById('subTopic');
+    const negativeEl = document.getElementById('negative');
+    const positiveFlipEl = document.getElementById('positiveFlip');
+    const finalSentenceEl = document.getElementById('finalSentence');
+
+    const subHintEl = document.getElementById('subHint');
+    const negHintEl = document.getElementById('negHint');
+    const posHintEl = document.getElementById('posHint');
+    const finalHintEl = document.getElementById('finalHint');
+
+    const saveBtn = document.getElementById('saveBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const jokeOverviewEl = document.getElementById('jokeOverview');
+    const exportBtn = document.getElementById('exportBtn');
+    const exportArea = document.getElementById('exportArea');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    const previewBlock = document.getElementById('previewBlock');
+
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalContent = document.getElementById('modalContent');
+    const modalClose = document.getElementById('modalClose');
+
+    let jokes = loadFromStorage();
+    renderOverview();
+    renderPreview();
+
+    mainTopicEl.addEventListener('input', () => {
+      subHintEl.textContent = mainTopicEl.value ? "Underemne indenfor: " + mainTopicEl.value : "";
+      renderPreview();
+    });
+    subTopicEl.addEventListener('input', () => {
+      negHintEl.textContent = subTopicEl.value ? "Hvad er irriterende ved: " + subTopicEl.value + "?" : "";
+      renderPreview();
+    });
+    negativeEl.addEventListener('input', () => {
+      posHintEl.textContent = negativeEl.value ? "Skriv det modsatte af: " + negativeEl.value : "";
+      renderPreview();
+    });
+    positiveFlipEl.addEventListener('input', () => {
+      finalHintEl.textContent = positiveFlipEl.value ? "Gør det til en sætning der kan siges på scenen." : "";
+      renderPreview();
+    });
+    finalSentenceEl.addEventListener('input', renderPreview);
+
+    saveBtn.addEventListener('click', () => {
+      const joke = collectForm();
+      if (!joke) return;
+      jokes.push(joke);
+      saveToStorage();
+      renderOverview();
+      clearFormExceptTopic();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      clearFormAll();
+    });
+
+    exportBtn.addEventListener('click', () => {
+      exportArea.value = jokes.map(j => toExportBlock(j)).join("\n---\n\n");
+      exportArea.style.display = "block";
+      exportArea.select();
+    });
+
+    deleteAllBtn.addEventListener('click', () => {
+      if (!confirm("Slet alle gemte jokes?")) return;
+      jokes = [];
+      saveToStorage();
+      renderOverview();
+    });
+
+    modalClose.addEventListener('click', () => {
+      modalBackdrop.style.display = "none";
+    });
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) modalBackdrop.style.display = "none";
+    });
+
+    function collectForm() {
+      const mainTopic = mainTopicEl.value.trim();
+      const subTopic = subTopicEl.value.trim();
+      const negative = negativeEl.value.trim();
+      const positiveFlip = positiveFlipEl.value.trim();
+      const finalSentence = finalSentenceEl.value.trim();
+
+      if (!mainTopic || !subTopic) {
+        alert("Du skal mindst udfylde hovedemne og underemne.");
+        return null;
+      }
+
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now(),
+        mainTopic,
+        subTopic,
+        negative,
+        positiveFlip,
+        finalSentence,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    function renderOverview() {
+      jokeOverviewEl.innerHTML = "";
+      if (!jokes.length) {
+        const p = document.createElement('p');
+        p.className = "empty-side";
+        p.textContent = "Ingen jokes endnu.";
+        jokeOverviewEl.appendChild(p);
+        return;
+      }
+      jokes.forEach(j => {
+        const item = document.createElement('div');
+        item.className = "joke-item";
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = "×";
+        delBtn.className = "joke-item-delete";
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          jokes = jokes.filter(x => x.id !== j.id);
+          saveToStorage();
+          renderOverview();
+        });
+        item.appendChild(delBtn);
+
+        const title = document.createElement('div');
+        title.className = "joke-item-title";
+        title.textContent = j.mainTopic + " → " + j.subTopic;
+
+        const sub = document.createElement('div');
+        sub.className = "joke-item-sub";
+        sub.textContent = j.finalSentence || "(ingen sætning til scene)";
+
+        item.appendChild(title);
+        item.appendChild(sub);
+
+        item.addEventListener('click', () => {
+          showJokeModal(j);
+        });
+
+        jokeOverviewEl.appendChild(item);
+      });
+    }
+
+    function toExportBlock(j) {
+      return [
+        "Hovedemne:" + (j.mainTopic || ""),
+        "Underemne:" + (j.subTopic || ""),
+        "Negativ holdning:" + (j.negative || ""),
+        "Positiv holdning:" + (j.positiveFlip || ""),
+        "Sætning til scene:" + (j.finalSentence || "")
+      ].join("\n");
+    }
+
+    function saveToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(jokes));
+    }
+
+    function loadFromStorage() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      try {
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function clearFormExceptTopic() {
+      subTopicEl.value = "";
+      negativeEl.value = "";
+      positiveFlipEl.value = "";
+      finalSentenceEl.value = "";
+      subHintEl.textContent = mainTopicEl.value ? "Underemne indenfor: " + mainTopicEl.value : "";
+      negHintEl.textContent = "";
+      posHintEl.textContent = "";
+      finalHintEl.textContent = "";
+      renderPreview();
+      subTopicEl.focus();
+    }
+
+    function clearFormAll() {
+      mainTopicEl.value = "";
+      subTopicEl.value = "";
+      negativeEl.value = "";
+      positiveFlipEl.value = "";
+      finalSentenceEl.value = "";
+      subHintEl.textContent = "";
+      negHintEl.textContent = "";
+      posHintEl.textContent = "";
+      finalHintEl.textContent = "";
+      renderPreview();
+      mainTopicEl.focus();
+    }
+
+    function renderPreview() {
+      const mainTopic = mainTopicEl.value.trim();
+      const subTopic = subTopicEl.value.trim();
+      const negative = negativeEl.value.trim();
+      const positiveFlip = positiveFlipEl.value.trim();
+      const finalSentence = finalSentenceEl.value.trim();
+
+      if (!mainTopic && !subTopic && !negative && !positiveFlip && !finalSentence) {
+        previewBlock.style.display = "none";
+        previewBlock.innerHTML = "";
+        return;
+      }
+
+      previewBlock.style.display = "block";
+      previewBlock.innerHTML = `
+        <h3>Forhåndsvisning</h3>
+        <p>Hovedemne: ${mainTopic || "(tom)"}</p>
+        <p>Underemne: ${subTopic || "(tom)"}</p>
+        <p>Negativ holdning: ${negative || "(tom)"}</p>
+        <p>Positiv holdning: ${positiveFlip || "(tom)"}</p>
+        <p>Sætning til scene: ${finalSentence || "(tom)"}</p>
+      `;
+    }
+
+    function showJokeModal(j) {
+      modalContent.innerHTML = `
+        <div class="modal-row">
+          <div class="modal-label">Hovedemne</div>
+          <div>${j.mainTopic || ""}</div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-label">Underemne</div>
+          <div>${j.subTopic || ""}</div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-label">Negativ holdning</div>
+          <div>${j.negative || ""}</div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-label">Positiv holdning</div>
+          <div>${j.positiveFlip || ""}</div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-label">Sætning til scene</div>
+          <div>${j.finalSentence || ""}</div>
+        </div>
+      `;
+      modalBackdrop.style.display = "flex";
+    }
+  </script>
+</body>
+</html>
